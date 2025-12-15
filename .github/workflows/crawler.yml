@@ -44,7 +44,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
   actions: write
 
 jobs:
@@ -161,3 +161,23 @@ jobs:
           S3_REGION: ${{ secrets.S3_REGION }}
           GITHUB_ACTIONS: true
         run: python -m trendradar
+
+      - name: Commit and Push Changes
+        if: success()
+        run: |
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+
+          # 检查 index.html 是否有变化
+          if git diff --quiet index.html; then
+            echo "ℹ️ No changes in index.html, skipping commit"
+          else
+            git add index.html
+            # 如果 output/index.html 也存在且有变化，一起提交
+            if [ -f output/index.html ]; then
+              git add output/index.html
+            fi
+            git commit -m "🤖 Auto-update: Latest news report $(date +'%Y-%m-%d %H:%M')"
+            git push
+            echo "✅ index.html updated and pushed"
+          fi
